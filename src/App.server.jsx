@@ -1,23 +1,30 @@
-import {DefaultRoutes} from '@shopify/hydrogen';
+import renderHydrogen from '@shopify/hydrogen/entry-server';
+import {Router, FileRoutes, ShopifyProvider} from '@shopify/hydrogen';
 import {Suspense} from 'react';
-
+import shopifyConfig from '../shopify.config';
 import DefaultSeo from './components/DefaultSeo.server';
 import NotFound from './components/NotFound.server';
-import AppClient from './App.client';
 import LoadingFallback from './components/LoadingFallback';
+import CartProvider from './components/CartProvider.client';
 
-export default function App({log, pages, ...serverState}) {
+function App({routes, ...serverProps}) {
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <AppClient helmetContext={serverState.helmetContext}>
-        <DefaultSeo />
-        <DefaultRoutes
-          pages={pages}
-          serverState={serverState}
-          log={log}
-          fallback={<NotFound />}
-        />
-      </AppClient>
+      <ShopifyProvider shopifyConfig={shopifyConfig}>
+        <CartProvider>
+          <DefaultSeo />
+          <Router
+            fallback={<NotFound response={serverProps.response} />}
+            serverProps={serverProps}
+          >
+            <FileRoutes routes={routes} />
+          </Router>
+        </CartProvider>
+      </ShopifyProvider>
     </Suspense>
   );
 }
+
+const routes = import.meta.globEager('./routes/**/*.server.[jt](s|sx)');
+
+export default renderHydrogen(App, {shopifyConfig, routes});

@@ -1,10 +1,15 @@
 import {
   useShopQuery,
   flattenConnection,
-  ProductProviderFragment,
-  Image,
   Link,
+  Seo,
+  CacheDays,
 } from '@shopify/hydrogen';
+import {
+  ProductProviderFragment,
+  ImageFragment,
+  HomeSeoFragment,
+} from '@shopify/hydrogen/fragments';
 import gql from 'graphql-tag';
 
 import Layout from '../components/Layout.server';
@@ -16,6 +21,9 @@ import {Suspense} from 'react';
 export default function Index({country = {isoCode: 'US'}}) {
   return (
     <Layout hero={<GradientBackground />}>
+      <Suspense fallback={null}>
+        <SeoForHomepage />
+      </Suspense>
       <div className="relative mb-12">
         <Welcome />
         <Suspense fallback={<BoxFallback />}>
@@ -29,6 +37,28 @@ export default function Index({country = {isoCode: 'US'}}) {
   );
 }
 
+function SeoForHomepage() {
+  const {
+    data: {
+      shop: {title, description},
+    },
+  } = useShopQuery({
+    query: SEO_QUERY,
+    cache: CacheDays(),
+    preload: true,
+  });
+
+  return (
+    <Seo
+      type="homepage"
+      data={{
+        title,
+        description,
+      }}
+    />
+  );
+}
+
 function BoxFallback() {
   return <div className="bg-white p-12 shadow-xl rounded-xl mb-10 h-40"></div>;
 }
@@ -39,6 +69,7 @@ function FeaturedProductsBox({country}) {
     variables: {
       country: country.isoCode,
     },
+    preload: true,
   });
 
   const collections = data ? flattenConnection(data.collections) : [];
@@ -91,6 +122,7 @@ function FeaturedCollectionBox({country}) {
     variables: {
       country: country.isoCode,
     },
+    preload: true,
   });
 
   const collections = data ? flattenConnection(data.collections) : [];
@@ -155,6 +187,16 @@ function GradientBackground() {
   );
 }
 
+const SEO_QUERY = gql`
+  query homeShopInfo {
+    shop {
+      ...HomeSeoFragment
+    }
+  }
+
+  ${HomeSeoFragment}
+`;
+
 const QUERY = gql`
   query indexContent(
     $country: CountryCode
@@ -193,5 +235,5 @@ const QUERY = gql`
   }
 
   ${ProductProviderFragment}
-  ${Image.Fragment}
+  ${ImageFragment}
 `;

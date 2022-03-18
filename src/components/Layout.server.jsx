@@ -1,9 +1,10 @@
 import {
-  Image,
   useShopQuery,
   flattenConnection,
   LocalizationProvider,
+  CacheHours,
 } from '@shopify/hydrogen';
+import {ImageFragment} from '@shopify/hydrogen/fragments';
 import gql from 'graphql-tag';
 
 import Header from './Header.client';
@@ -20,17 +21,15 @@ export default function Layout({children, hero}) {
     variables: {
       numCollections: 3,
     },
-    cache: {
-      maxAge: 60,
-      staleWhileRevalidate: 60 * 10,
-    },
+    cache: CacheHours(),
+    preload: '*',
   });
   const collections = data ? flattenConnection(data.collections) : null;
   const products = data ? flattenConnection(data.products) : null;
   const storeName = data ? data.shop.name : '';
 
   return (
-    <LocalizationProvider>
+    <LocalizationProvider preload="*">
       <div className="absolute top-0 left-0">
         <a
           href="#mainContent"
@@ -58,7 +57,7 @@ export default function Layout({children, hero}) {
 }
 
 const QUERY = gql`
-  query indexContent($numCollections: Int!) {
+  query layoutContent($numCollections: Int!) {
     shop {
       name
     }
@@ -83,5 +82,5 @@ const QUERY = gql`
       }
     }
   }
-  ${Image.Fragment}
+  ${ImageFragment}
 `;
